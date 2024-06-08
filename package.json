@@ -1,0 +1,26 @@
+{
+  "name": "web3-worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "serverless offline"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "esbuild": "^0.20.2",
+    "serverless": "^3.39.0",
+    "serverless-esbuild": "^1.52.1",
+    "serverless-lift": "^1.28.1",
+    "serverless-offline": "^13.6.0",
+    "serverless-offline-sqs": "^8.0.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.592.0"
+  }
+}

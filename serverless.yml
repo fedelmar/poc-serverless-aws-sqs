@@ -1,0 +1,77 @@
+service: web3-worker
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+          Resource:
+            - Fn::GetAtt: [txQueue, Arn]
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+          Resource:
+            - Fn::GetAtt: [pendingTxQueue, Arn]
+
+functions:
+  sender:
+    handler: src/handler.sender
+    events:
+      - http:
+          method: post
+          path: sender
+
+  receiver:
+    handler: src/handler.receiver
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - txQueue
+              - Arn
+
+  scheduler:
+    handler: src/handler.scheduler
+    events:
+      - schedule:
+          rate: rate(1 minute)
+          enabled: true
+
+resources:
+  Resources:
+    txQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: txQueue
+
+    pendingTxQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: pendingTxQueue
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+
+  serverless-offline-sqs:
+    autoCreate: true
+    apiVersion: "2012-11-05"
+    endpoint: http://localhost:9324
+    region: localhost
+    accessKeyId: root
+    secretAccessKey: root
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline-sqs
+  - serverless-offline
