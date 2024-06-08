@@ -7,11 +7,6 @@ This project is a Proof of Concept (POC) demonstrating the use of the Serverless
 - [Introduction](#introduction)
 - [Architecture](#architecture)
 - [Setup](#setup)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [Scripts](#scripts)
-- [License](#license)
 
 ## Introduction
 
@@ -36,3 +31,32 @@ This POC consists of three main serverless functions:
 - AWS account
 - Docker (optional for local testing with serverless-offline)
 
+## Setup
+
+### Prerequisites
+
+- Node.js
+- npm or yarn
+- Serverless Framework
+- AWS account
+- Docker (optional for local testing with serverless-offline)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/poc-serverless-aws-sqs.git
+   cd poc-serverless-aws-sqs
+
+2. Install the dependencies:
+
+npm install
+# or
+yarn install
+
+3. Configure environment variables:
+Create a .env file in the root directory with the following content:
+
+IS_OFFLINE=true
+AWS_REGION=us-east-1
+PENDING_TX_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/your-account-id/pendingTxQueue
