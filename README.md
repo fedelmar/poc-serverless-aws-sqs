@@ -49,10 +49,7 @@ This POC consists of three main serverless functions:
    cd poc-serverless-aws-sqs
 
 2. Install the dependencies:
-
-npm install
-# or
-yarn install
+npm install OR yarn install    
 
 3. Configure environment variables:
 Create a .env file in the root directory with the following content:
