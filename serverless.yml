@@ -85,5 +85,3 @@ plugins:
   - serverless-esbuild
   - serverless-offline-sqs
   - serverless-offline
-  - serverless-plugin-typescript 
-  - ./src/conditional-event-plugin
