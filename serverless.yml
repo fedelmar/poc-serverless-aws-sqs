@@ -11,6 +11,9 @@ provider:
         - Effect: Allow
           Action:
             - sqs:SendMessage
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
           Resource:
             - Fn::GetAtt: [txQueue, Arn]
         - Effect: Allow
@@ -25,6 +28,7 @@ provider:
 functions:
   sender:
     handler: src/handler.sender
+    timeout: 900
     events:
       - http:
           method: post
@@ -32,15 +36,18 @@ functions:
 
   receiver:
     handler: src/handler.receiver
+    timeout: 900
+    reservedConcurrency: 1
     events:
       - sqs:
           arn:
             Fn::GetAtt:
               - txQueue
               - Arn
-
+          batchSize: 1
   scheduler:
     handler: src/handler.scheduler
+    timeout: 900
     events:
       - schedule:
           rate: rate(1 minute)
@@ -48,15 +55,18 @@ functions:
 
 resources:
   Resources:
-    txQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: txQueue
-
     pendingTxQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: pendingTxQueue
+        QueueName: pendingTxQueue.fifo
+        FifoQueue: true
+        ContentBasedDeduplication: true
+    txQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: txQueue.fifo
+        FifoQueue: true
+        ContentBasedDeduplication: true
 
 custom:
   esbuild:
@@ -75,3 +85,5 @@ plugins:
   - serverless-esbuild
   - serverless-offline-sqs
   - serverless-offline
+  - serverless-plugin-typescript 
+  - ./src/conditional-event-plugin
