@@ -1,7 +1,7 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { isOffline } from './config';
-import { sqs } from './sqs';
-import { SendMessageCommand } from '@aws-sdk/client-sqs';
+import { APIGatewayProxyHandler } from "aws-lambda";
+import { isOffline } from "./config";
+
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const sender: APIGatewayProxyHandler = async (event, context) => {
   let statusCode: number = 200;
@@ -11,18 +11,16 @@ const sender: APIGatewayProxyHandler = async (event, context) => {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        message: 'No body was found',
+        message: "No body was found",
       }),
     };
   }
 
-  const region = isOffline ? 'elasticmq' : context.invokedFunctionArn.split(':')[3];
-  const accountId = isOffline ? '000000000000' : context.invokedFunctionArn.split(':')[4];
-  const queueName: string = 'pendingTxQueue';
+  const client = new SQSClient({});
 
-  const queueUrl: string = isOffline 
-    ? `http://localhost:9324/queue/${queueName}`
-    : `https://sqs.${region}.amazonaws.com/${accountId}/${queueName}`;
+  const queueName: string = "pendingTxQueue";
+
+  const queueUrl: string = "https://sqs.us-east-1.amazonaws.com/445677355183/txQueue.fifo";
 
   try {
     const command = new SendMessageCommand({
@@ -30,18 +28,17 @@ const sender: APIGatewayProxyHandler = async (event, context) => {
       MessageBody: event.body,
       MessageAttributes: {
         AttributeNameHere: {
-          StringValue: 'Attribute Value Here',
-          DataType: 'String',
+          StringValue: "Attribute Value Here",
+          DataType: "String",
         },
       },
     });
-    
-    await sqs.send(command);
 
-    message = 'Message placed in the Queue!';
+    await client.send(command);
 
+    message = "Message placed in the Queue!";
   } catch (error) {
-    console.log('Error:', error);
+    console.log("Error:", error);
     message = error.message;
     statusCode = 500;
   }

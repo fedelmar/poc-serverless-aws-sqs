@@ -1,5 +1,4 @@
-import sender from './sender';
-import receiver from './receiver';
-import scheduler from './scheduler';
+import sender from "./sender";
+import receiver from "./receiver";
 
-export { sender, receiver, scheduler };
+export { sender, receiver };
