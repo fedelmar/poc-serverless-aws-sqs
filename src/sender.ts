@@ -1,11 +1,11 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { isOffline } from "./config";
 
-import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 
 const sender: APIGatewayProxyHandler = async (event, context) => {
   let statusCode: number = 200;
-  let message: string;
+  let message: SendMessageCommandOutput;
 
   if (!event.body) {
     return {
@@ -17,9 +17,6 @@ const sender: APIGatewayProxyHandler = async (event, context) => {
   }
 
   const client = new SQSClient({});
-
-  const queueName: string = "pendingTxQueue";
-
   const queueUrl: string = "https://sqs.us-east-1.amazonaws.com/445677355183/txQueue.fifo";
 
   try {
@@ -32,11 +29,13 @@ const sender: APIGatewayProxyHandler = async (event, context) => {
           DataType: "String",
         },
       },
+      MessageGroupId: 'group-id',
     });
 
-    await client.send(command);
+    const response = await client.send(command);
 
-    message = "Message placed in the Queue!";
+    console.log(response)
+    message = response;
   } catch (error) {
     console.log("Error:", error);
     message = error.message;

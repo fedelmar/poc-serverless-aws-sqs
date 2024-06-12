@@ -16,6 +16,7 @@ functions:
 
   receiver:
     handler: src/handler.receiver
+    reservedConcurrency: 1
     events:
       - sqs:
           arn: arn:aws:sqs:us-east-1:445677355183:txQueue.fifo
