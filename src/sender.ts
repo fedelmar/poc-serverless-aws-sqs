@@ -30,6 +30,7 @@ const sender: APIGatewayProxyHandler = async (event, context) => {
         },
       },
       MessageGroupId: 'group-id',
+      MessageDeduplicationId: Math.random().toString(),
     });
 
     const response = await client.send(command);
