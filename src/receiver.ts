@@ -1,22 +1,39 @@
 import { SQSHandler } from "aws-lambda";
-import { web3Handler } from "./web3Handler";
-import { SendMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { Web3Service } from "./services/web3Service";
+
+const client = new SQSClient({});
 
 const receiver: SQSHandler = async (event, context) => {
+  const pendingTxQueueUrl =
+    "https://sqs.us-east-1.amazonaws.com/445677355183/pendingTxQueue.fifo";
+  const web3Service = new Web3Service();
   try {
     for (const record of event.Records) {
-      const data = JSON.parse(record.body);
+      let body = JSON.parse(record.body);
 
-      console.log("Message Body ON RECEIVER -->  ", data);
+      console.log("Message Body ON RECEIVER -->  ", body);
 
-      const txHash = await web3Handler.safeTransferFrom(
-        data.from,
-        data.to,
-        data.id,
-        data.amount
-      );
+      if (body.type === "safeTransfer") {
+        const { data } = body;
+        const txHash: string = await web3Service.safeTransfer(
+          data.from,
+          data.to,
+          data.id,
+          data.amount
+        );
 
-      console.log("txHash: ", txHash);
+        body.hash = txHash;
+        const command = new SendMessageCommand({
+          QueueUrl: pendingTxQueueUrl,
+          MessageBody: JSON.stringify(body),
+          MessageGroupId: "group-id",
+          MessageDeduplicationId: Math.random().toString(),
+        });
+
+        await client.send(command);
+        console.log("Message sent to pendingTxQueue");
+      }
     }
   } catch (error) {
     console.log("Error:", error);

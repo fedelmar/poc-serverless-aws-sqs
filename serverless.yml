@@ -5,6 +5,11 @@ useDotenv: true
 provider:
   name: aws
   runtime: nodejs18.x
+  environment:
+    WEB3_ACC_PRIVATE_KEY: ${env:WEB3_ACC_PRIVATE_KEY}
+    CONTRACT_PROXY: ${env:CONTRACT_PROXY}
+    WEB3_INFURA_PROVIDER_URL: ${env:WEB3_INFURA_PROVIDER_URL}
+    COMPLETE_TRANSACTION_URL: ${env:COMPLETE_TRANSACTION_URL}
 
 functions:
   sender:
@@ -16,11 +21,20 @@ functions:
 
   receiver:
     handler: src/handler.receiver
+    timeout: 900
     reservedConcurrency: 1
     events:
       - sqs:
           arn: arn:aws:sqs:us-east-1:445677355183:txQueue.fifo
           batchSize: 1
+  
+  scheduler:
+    handler: src/handler.scheduler
+    timeout: 900
+    events:
+      - schedule:
+          rate: rate(1 minute)
+          enabled: true
 
 custom:
   esbuild:
