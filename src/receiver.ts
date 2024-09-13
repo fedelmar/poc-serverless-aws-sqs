@@ -1,31 +1,42 @@
-import { SQSHandler } from 'aws-lambda';
-import { SendMessageCommand } from '@aws-sdk/client-sqs';
-import { sqs } from './sqs';
-import { isOffline } from './config';
+import { SQSHandler } from "aws-lambda";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { Web3Service } from "./services/web3Service";
+
+const client = new SQSClient({});
 
 const receiver: SQSHandler = async (event, context) => {
-  const region = isOffline ? 'elasticmq' : context.invokedFunctionArn.split(':')[3];
-  const accountId = isOffline ? '000000000000' : context.invokedFunctionArn.split(':')[4];
-  const queueName: string = 'pendingTxQueue';
-
-  const pendingTxQueueUrl: string = isOffline
-    ? `http://localhost:9324/queue/${queueName}`
-    : `https://sqs.${region}.amazonaws.com/${accountId}/${queueName}`;
-
+  const pendingTxQueueUrl =
+    "https://sqs.us-east-1.amazonaws.com/445677355183/pendingTxQueue.fifo";
+  const web3Service = new Web3Service();
   try {
     for (const record of event.Records) {
-      console.log('Message Body -->  ', record.body);
+      let body = JSON.parse(record.body);
 
-      const command = new SendMessageCommand({
-        QueueUrl: pendingTxQueueUrl,
-        MessageBody: record.body,
-      });
+      console.log("Message Body ON RECEIVER -->  ", body);
 
-      await sqs.send(command);
-      console.log('Message sent to pendingTxQueue');
+      if (body.type === "safeTransfer") {
+        const { data } = body;
+        const txHash: string = await web3Service.safeTransfer(
+          data.from,
+          data.to,
+          data.id,
+          data.amount
+        );
+
+        body.hash = txHash;
+        const command = new SendMessageCommand({
+          QueueUrl: pendingTxQueueUrl,
+          MessageBody: JSON.stringify(body),
+          MessageGroupId: "group-id",
+          MessageDeduplicationId: Math.random().toString(),
+        });
+
+        await client.send(command);
+        console.log("Message sent to pendingTxQueue");
+      }
     }
   } catch (error) {
-    console.log('Error sending message to pendingTxQueue:', error);
+    console.log("Error:", error);
   }
 };
 

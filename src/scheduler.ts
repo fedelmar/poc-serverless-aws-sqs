@@ -1,42 +1,52 @@
-import { ScheduledHandler } from 'aws-lambda';
-import { ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
-import { sqs } from './sqs';
-import { isOffline } from './config';
+import { ScheduledHandler } from "aws-lambda";
+import {
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+  SQSClient,
+} from "@aws-sdk/client-sqs";
+import { web3Handler } from "./web3Handler";
+import axios from "axios";
+
+const client = new SQSClient({});
 
 const scheduler: ScheduledHandler = async (event, context) => {
-  const queueUrl = isOffline 
-    ? 'http://localhost:9324/queue/pendingTxQueue'
-    : `https://sqs.${context.invokedFunctionArn.split(':')[3]}.amazonaws.com/${context.invokedFunctionArn.split(':')[4]}/pendingTxQueue`;
+  const completeTxUrl = process.env.COMPLETE_TRANSACTION_URL;
+  const queueUrl =
+    "https://sqs.us-east-1.amazonaws.com/445677355183/pendingTxQueue.fifo";
 
   try {
     const receiveCommand = new ReceiveMessageCommand({
       QueueUrl: queueUrl,
       MaxNumberOfMessages: 1,
-      VisibilityTimeout: 20,
+      VisibilityTimeout: 900,
       WaitTimeSeconds: 0,
     });
 
-    const result = await sqs.send(receiveCommand);
-    
-    console.log('----------- Result ---------------')
-    console.log(result)
+    const result = await client.send(receiveCommand);
+
     if (result.Messages) {
       for (const message of result.Messages) {
-        console.log('Message Body:', message.Body);
+        const body = message.Body ? JSON.parse(message.Body) : "";
+        console.log("message body: ", body);
+        const txStatus = await web3Handler.getTransactionStatus(body.hash);
 
-        // Procesar el mensaje aquí
+        if (txStatus.receipt.status === 1) {
+          console.log("Delete message and send to api");
+          await axios.post(completeTxUrl!, {
+            ...body,
+            receipt: txStatus,
+          });
+          const deleteCommand = new DeleteMessageCommand({
+            QueueUrl: queueUrl,
+            ReceiptHandle: message.ReceiptHandle!,
+          });
 
-        // Eliminar el mensaje después de procesarlo
-        const deleteCommand = new DeleteMessageCommand({
-          QueueUrl: queueUrl,
-          ReceiptHandle: message.ReceiptHandle!,
-        });
-
-        await sqs.send(deleteCommand);
+          await client.send(deleteCommand);
+        }
       }
     }
   } catch (error) {
-    console.error('Error receiving or deleting message:', error);
+    console.error("Error receiving or deleting message:", error);
   }
 };
 
