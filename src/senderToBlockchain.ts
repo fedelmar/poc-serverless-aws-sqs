@@ -4,7 +4,7 @@ import { Web3Service } from "./services/web3Service";
 
 const client = new SQSClient({});
 
-const receiver: SQSHandler = async (event, context) => {
+const senderToBlockchain: SQSHandler = async (event, context) => {
   const pendingTxQueueUrl =
     "https://sqs.us-east-1.amazonaws.com/445677355183/pendingTxQueue.fifo";
   const web3Service = new Web3Service();
@@ -16,14 +16,14 @@ const receiver: SQSHandler = async (event, context) => {
 
       if (body.type === "safeTransfer") {
         const { data } = body;
-        const txHash: string = await web3Service.safeTransfer(
+        const { hash } = await web3Service.safeTransfer(
           data.from,
           data.to,
           data.id,
           data.amount
         );
 
-        body.hash = txHash;
+        body.hash = hash;
         const command = new SendMessageCommand({
           QueueUrl: pendingTxQueueUrl,
           MessageBody: JSON.stringify(body),
@@ -40,4 +40,4 @@ const receiver: SQSHandler = async (event, context) => {
   }
 };
 
-export default receiver;
+export default senderToBlockchain;

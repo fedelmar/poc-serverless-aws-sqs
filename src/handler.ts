@@ -1,5 +1,5 @@
 import sender from "./sender";
-import receiver from "./receiver";
-import scheduler from "./scheduler";
+import senderToBlockchain from "./senderToBlockchain";
+import statusChecker from "./statusChecker";
 
-export { sender, receiver, scheduler };
+export { sender, senderToBlockchain, statusChecker };
