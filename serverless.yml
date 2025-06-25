@@ -12,15 +12,15 @@ provider:
     COMPLETE_TRANSACTION_URL: ${env:COMPLETE_TRANSACTION_URL}
 
 functions:
-  sender:
-    handler: src/handler.sender
-    events:
-      - http:
-          method: post
-          path: sender
+  # sender:
+  #   handler: src/handler.sender
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: sender
 
-  receiver:
-    handler: src/handler.receiver
+  senderToBlockchain:
+    handler: src/handler.senderToBlockchain
     timeout: 900
     reservedConcurrency: 1
     events:
@@ -28,13 +28,15 @@ functions:
           arn: arn:aws:sqs:us-east-1:445677355183:txQueue.fifo
           batchSize: 1
   
-  scheduler:
-    handler: src/handler.scheduler
+  statusChecker:
+    handler: src/handler.statusChecker
     timeout: 900
     events:
+      - sqs:
+          arn: arn:aws:sqs:us-east-1:445677355183:pendingTxQueue.fifo
+          batchSize: 1
       - schedule:
-          rate: rate(1 minute)
-          enabled: true
+          rate: rate(5 minutes)
 
 custom:
   esbuild:
